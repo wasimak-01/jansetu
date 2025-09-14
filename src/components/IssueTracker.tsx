@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { Search, Filter, MapPin, Clock, CheckCircle, AlertTriangle, Eye, Calendar } from 'lucide-react';
+import StatusChip from './StatusChip';
+import EnhancedTimeline from './EnhancedTimeline';
+import SkeletonLoader from './SkeletonLoader';
 import type { Issue } from '../App';
 
 interface IssueTrackerProps {
@@ -26,6 +29,7 @@ const IssueTracker: React.FC<IssueTrackerProps> = ({ issues }) => {
   const [statusFilter, setStatusFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const filteredIssues = issues.filter(issue => {
     const matchesSearch = issue.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -123,6 +127,9 @@ const IssueTracker: React.FC<IssueTrackerProps> = ({ issues }) => {
 
       {/* Issues List */}
       <div className="space-y-4">
+        {isLoading ? (
+          <SkeletonLoader type="card" count={3} />
+        ) : (
         {filteredIssues.length === 0 ? (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
             <div className="text-gray-400 mb-2">
@@ -138,7 +145,7 @@ const IssueTracker: React.FC<IssueTrackerProps> = ({ issues }) => {
             return (
               <div
                 key={issue.id}
-                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 card-hover cursor-pointer"
                 onClick={() => setSelectedIssue(issue)}
                 role="button"
                 tabIndex={0}
@@ -161,13 +168,13 @@ const IssueTracker: React.FC<IssueTrackerProps> = ({ issues }) => {
                   </div>
                   
                   <div className="flex items-center gap-2 ml-4">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${priorityConfig[issue.priority].color}`}>
-                      {issue.priority.charAt(0).toUpperCase() + issue.priority.slice(1)}
-                    </span>
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${statusConfig[issue.status].color}`}>
-                      <StatusIcon className="w-3 h-3 mr-1" />
-                      {issue.status.charAt(0).toUpperCase() + issue.status.slice(1).replace('-', ' ')}
-                    </span>
+                    <StatusChip
+                      status={issue.status}
+                      priority={issue.priority}
+                      slaDeadline={issue.slaDeadline}
+                      showETA={true}
+                      size="sm"
+                    />
                   </div>
                 </div>
                 
@@ -192,6 +199,7 @@ const IssueTracker: React.FC<IssueTrackerProps> = ({ issues }) => {
               </div>
             );
           })
+        )}
         )}
       </div>
 
@@ -281,27 +289,11 @@ const IssueTracker: React.FC<IssueTrackerProps> = ({ issues }) => {
               
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">Timeline</h4>
-                <div className="space-y-3">
-                  {selectedIssue.timeline.map((event, index) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <div className="w-2 h-2 bg-blue-600 rounded-full mt-2 flex-shrink-0"></div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-medium text-gray-900">
-                            {event.status.charAt(0).toUpperCase() + event.status.slice(1).replace('-', ' ')}
-                          </span>
-                          <span className="text-sm text-gray-500">
-                            {formatDate(event.timestamp)}
-                          </span>
-                        </div>
-                        {event.note && (
-                          <p className="text-sm text-gray-600">{event.note}</p>
-                        )}
-                        <p className="text-xs text-gray-500">by {event.updatedBy}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <EnhancedTimeline
+                  events={selectedIssue.timeline}
+                  showTimeDelta={true}
+                  showEvidence={true}
+                />
               </div>
             </div>
           </div>

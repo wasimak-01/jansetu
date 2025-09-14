@@ -6,6 +6,9 @@ import IssueTracker from './components/IssueTracker';
 import Dashboard from './components/Dashboard';
 import PublicStats from './components/PublicStats';
 import Footer from './components/Footer';
+import { ToastProvider } from './components/ToastContainer';
+import AccessibilityControls from './components/AccessibilityControls';
+import OfflineBanner from './components/OfflineBanner';
 
 export interface Issue {
   id: string;
@@ -37,6 +40,13 @@ function App() {
   const [currentView, setCurrentView] = useState<'report' | 'track' | 'dashboard' | 'stats'>('report');
   const [issues, setIssues] = useState<Issue[]>([]);
   const [userType, setUserType] = useState<'citizen' | 'admin'>('citizen');
+  const [queuedReports, setQueuedReports] = useState(0);
+  const [accessibilitySettings, setAccessibilitySettings] = useState({
+    highContrast: false,
+    largeText: false,
+    reducedMotion: false,
+    screenReader: false
+  });
 
   // Mock data for demonstration
   useEffect(() => {
@@ -166,34 +176,48 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Header 
-        currentView={currentView}
-        setCurrentView={setCurrentView}
-        userType={userType}
-        setUserType={setUserType}
-      />
-      
-      <main className="pb-20">
-        {currentView === 'report' && (
-          <IssueReportForm onSubmit={handleSubmitIssue} />
-        )}
+    <ToastProvider position="top-right">
+      <div className="min-h-screen bg-gray-50">
+        <OfflineBanner 
+          queuedItems={queuedReports}
+          onRetrySync={() => {
+            // Mock retry sync
+            setTimeout(() => setQueuedReports(0), 2000);
+          }}
+        />
         
-        {currentView === 'track' && (
-          <IssueTracker issues={issues} />
-        )}
+        <Header 
+          currentView={currentView}
+          setCurrentView={setCurrentView}
+          userType={userType}
+          setUserType={setUserType}
+        />
         
-        {currentView === 'dashboard' && userType === 'admin' && (
-          <Dashboard issues={issues} onUpdateIssue={handleUpdateIssue} />
-        )}
-        
-        {currentView === 'stats' && (
-          <PublicStats issues={issues} />
-        )}
-      </main>
+        <main className="pb-20">
+          {currentView === 'report' && (
+            <IssueReportForm onSubmit={handleSubmitIssue} />
+          )}
+          
+          {currentView === 'track' && (
+            <IssueTracker issues={issues} />
+          )}
+          
+          {currentView === 'dashboard' && userType === 'admin' && (
+            <Dashboard issues={issues} onUpdateIssue={handleUpdateIssue} />
+          )}
+          
+          {currentView === 'stats' && (
+            <PublicStats issues={issues} />
+          )}
+        </main>
 
-      <Footer />
-    </div>
+        <Footer />
+        
+        <AccessibilityControls 
+          onSettingsChange={setAccessibilitySettings}
+        />
+      </div>
+    </ToastProvider>
   );
 }
 

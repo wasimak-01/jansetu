@@ -1,5 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Camera, MapPin, AlertCircle, Upload, X } from 'lucide-react';
+import ImageUpload from './ImageUpload';
+import { useToast } from './ToastContainer';
 import type { Issue } from '../App';
 
 interface IssueReportFormProps {
@@ -26,7 +28,9 @@ const IssueReportForm: React.FC<IssueReportFormProps> = ({ onSubmit }) => {
   const [photos, setPhotos] = useState<string[]>([]);
   const [reporterName, setReporterName] = useState('');
   const [isGettingLocation, setIsGettingLocation] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { addToast } = useToast();
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -75,33 +79,50 @@ const IssueReportForm: React.FC<IssueReportFormProps> = ({ onSubmit }) => {
     e.preventDefault();
     
     if (!title.trim() || !description.trim() || !category || !reporterName.trim()) {
-      alert('Please fill in all required fields');
+      addToast({
+        type: 'error',
+        title: 'Missing Information',
+        message: 'Please fill in all required fields before submitting.'
+      });
       return;
     }
 
-    onSubmit({
-      title: title.trim(),
-      description: description.trim(),
-      category,
-      priority,
-      status: 'submitted',
-      location: location.address ? location : {
-        lat: 40.7128,
-        lng: -74.0060,
-        address: 'Location not specified'
-      },
-      photos,
-      reportedBy: reporterName.trim()
-    });
+    setIsSubmitting(true);
 
-    // Reset form
-    setTitle('');
-    setDescription('');
-    setCategory('');
-    setPriority('medium');
-    setLocation({ lat: 0, lng: 0, address: '' });
-    setPhotos([]);
-    setReporterName('');
+    // Simulate submission delay
+    setTimeout(() => {
+      onSubmit({
+        title: title.trim(),
+        description: description.trim(),
+        category,
+        priority,
+        status: 'submitted',
+        location: location.address ? location : {
+          lat: 40.7128,
+          lng: -74.0060,
+          address: 'Location not specified'
+        },
+        photos,
+        reportedBy: reporterName.trim()
+      });
+
+      addToast({
+        type: 'success',
+        title: 'Report Submitted',
+        message: 'Your issue has been reported successfully. You can track its progress in the Track Issues section.',
+        duration: 6000
+      });
+
+      // Reset form
+      setTitle('');
+      setDescription('');
+      setCategory('');
+      setPriority('medium');
+      setLocation({ lat: 0, lng: 0, address: '' });
+      setPhotos([]);
+      setReporterName('');
+      setIsSubmitting(false);
+    }, 1000);
   };
 
   return (
@@ -247,60 +268,33 @@ const IssueReportForm: React.FC<IssueReportFormProps> = ({ onSubmit }) => {
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Photos (Optional)
             </label>
-            <div className="space-y-3">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-gray-300 rounded-md bg-white text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <Camera className="w-4 h-4 mr-2" />
-                Add Photos
-              </button>
-              
-              <input
-                ref={fileInputRef}
-                type="file"
-                multiple
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                className="hidden"
-              />
-              
-              {photos.length > 0 && (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                  {photos.map((photo, index) => (
-                    <div key={index} className="relative group">
-                      <img
-                        src={photo}
-                        alt={`Issue photo ${index + 1}`}
-                        className="w-full h-20 object-cover rounded-md border border-gray-200"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removePhoto(index)}
-                        className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-                        aria-label={`Remove photo ${index + 1}`}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-              
-              <p className="text-xs text-gray-500">
-                Add up to 5 photos to help illustrate the issue. Photos help city officials better understand and prioritize your report.
-              </p>
-            </div>
+            <ImageUpload
+              images={photos}
+              onImagesChange={setPhotos}
+              maxImages={5}
+              maxSizeKB={2048}
+              showCompressionMeter={true}
+            />
           </div>
 
           {/* Submit Button */}
           <div className="pt-4 border-t border-gray-200">
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+              disabled={isSubmitting}
+              className={`
+                btn-primary w-full touch-target
+                ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
             >
-              Submit Issue Report
+              {isSubmitting ? (
+                <div className="flex items-center justify-center gap-2">
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Submitting...</span>
+                </div>
+              ) : (
+                'Submit Issue Report'
+              )}
             </button>
             <p className="text-xs text-gray-500 mt-2 text-center">
               By submitting, you agree that your report may be made public for transparency purposes.
