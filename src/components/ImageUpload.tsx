@@ -1,5 +1,5 @@
 import React, { useState, useRef, useCallback } from 'react';
-import { Camera, Upload, X, Compress, Image as ImageIcon } from 'lucide-react';
+import { Camera, Upload, X, Compass as Compress, Image as ImageIcon } from 'lucide-react';
 import ProgressLoader from './ProgressLoader';
 
 interface ImageUploadProps {
